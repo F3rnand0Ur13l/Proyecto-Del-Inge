@@ -24,113 +24,99 @@
 	int		iEstadisticas[]			:	Arreglo con el numero de veces que aparecen las palabras en el diccionario
 	int &	iNumElementos			:	Numero de elementos en el diccionario
 ******************************************************************************************************************/
-void AcentosMinusculas(char* palabra)
+void Diccionario(char* szNombre, char szPalabras[][TAMTOKEN], int iEstadisticas[], int& iNumElementos)
 {
-	for (int i = 0; palabra[i] != '\0'; i++)
-	{
-		switch (palabra[i])
-		{
-		case 'á': palabra[i] = 'a'; break;
-		case 'é': palabra[i] = 'e'; break;
-		case 'í': palabra[i] = 'i'; break;
-		case 'ó': palabra[i] = 'o'; break;
-		case 'ú': palabra[i] = 'u'; break;
-		}
-		palabra[i] = tolower(palabra[i]);
-	}
+    FILE* fpDicc;
+    char linea[4000];
+    char palabraDetectada[TAMTOKEN];
+    int i;
+    int indicePD;
+    iNumElementos = 0;
+
+    fopen_s(&fpDicc, szNombre, "r");
+    if (fpDicc != NULL)
+    {
+        indicePD = 0;
+
+        while (fgets(linea, sizeof(linea), fpDicc) != NULL)
+        {
+            for (i = 0; i < strlen(linea); i++)
+            {
+                if (linea[i] == ' ' || linea[i] == '\n' || linea[i] == '\t' || linea[i] == '\r')
+                {
+                    palabraDetectada[indicePD] = '\0';
+
+                    // Integrar la función AcentosMinusculas aquí
+                    for (int k = 0; palabraDetectada[k] != '\0'; k++)
+                    {
+                        switch (palabraDetectada[k])
+                        {
+                        case 'á': palabraDetectada[k] = 'a'; break;
+                        case 'é': palabraDetectada[k] = 'e'; break;
+                        case 'í': palabraDetectada[k] = 'i'; break;
+                        case 'ó': palabraDetectada[k] = 'o'; break;
+                        case 'ú': palabraDetectada[k] = 'u'; break;
+                        }
+                        palabraDetectada[k] = tolower(palabraDetectada[k]);
+                    }
+                    // Fin de la integración de AcentosMinusculas
+
+                    // Palabras repetidas
+                    int indiceExistente = -1;
+                    for (int j = 0; j < iNumElementos && indiceExistente == -1; ++j)
+                    {
+                        if (strcmp(szPalabras[j], palabraDetectada) == 0)
+                        {
+                            indiceExistente = j;
+                        }
+                    }
+
+                    if (indiceExistente != -1)
+                    {
+                        iEstadisticas[indiceExistente]++;
+                    }
+                    else
+                    {
+                        strcpy_s(szPalabras[iNumElementos], TAMTOKEN, palabraDetectada);
+                        iEstadisticas[iNumElementos] = 1;
+                        ++iNumElementos;
+                    }
+
+                    indicePD = 0;
+                }
+                else
+                {
+                    palabraDetectada[indicePD] = linea[i];
+                    ++indicePD;
+                }
+            }
+            printf("\nNumPalabras: %i\n", iNumElementos);
+        }
+
+        fclose(fpDicc);
+
+        // Ordenar
+        for (int i = 0; i < iNumElementos - 1; ++i)
+        {
+            for (int j = 0; j < iNumElementos - i - 1; ++j)
+            {
+                if (strcmp(szPalabras[j], szPalabras[j + 1]) > 0)
+                {
+                    // Intercambiar las palabras
+                    char temp[TAMTOKEN];
+                    strcpy_s(temp, TAMTOKEN, szPalabras[j]);
+                    strcpy_s(szPalabras[j], TAMTOKEN, szPalabras[j + 1]);
+                    strcpy_s(szPalabras[j + 1], TAMTOKEN, temp);
+                }
+            }
+        }
+    }
+    else
+    {
+        printf("\nNo lo pude abrir");
+    }
 }
-void	Diccionario(char* szNombre, char szPalabras[][TAMTOKEN], int iEstadisticas[], int& iNumElementos)
-{
-	FILE* fpDicc;
-	char linea[4000];
-	char palabraDetectada[TAMTOKEN];
-	int i;
-	int indicePD;
-	iNumElementos = 0;
-	// abrir el achivo
-	//if (DEPURAR == 1)
-		//printf("%s", szNombre);
 
-	fopen_s(&fpDicc, szNombre, "r");
-	if (fpDicc != NULL)
-	{
-
-		indicePD = 0;
-		while (!feof(fpDicc))
-		{
-			fgets(linea, sizeof(linea), fpDicc);
-			for (i = 0; i < strlen(linea); i++)
-			{
-
-				// Detectar una palabra
-				if (linea[i] == ' ' || linea[i] == '\n' || linea[i] == '\t' || linea[i] == '\r')
-				{
-					palabraDetectada[indicePD] = '\0';
-					AcentosMinusculas(palabraDetectada);
-					//Palabras repetidas 
-					int indiceExistente = -1;
-					for (int j = 0; j < iNumElementos && indiceExistente == -1; ++j)
-					{
-						if (strcmp(szPalabras[j], palabraDetectada) == 0)
-						{
-							indiceExistente = j;
-						}
-					}
-					if (indiceExistente != -1)
-					{
-						iEstadisticas[indiceExistente]++;
-					}
-					else
-					{
-						strcpy_s(szPalabras[iNumElementos], TAMTOKEN, palabraDetectada);
-						iEstadisticas[iNumElementos] = 1;
-						++iNumElementos;
-					}
-
-					indicePD = 0;
-					// eliminar los espacios en blanco
-					// tabuladores y saltos de linea consecutivos				
-				}
-				else
-				{
-					if (linea[i] != '(' && linea[i] != ')' && linea[i] != ',' && linea[i] != '.' && linea[i] != ';' && linea[i] != '´')
-					{
-						palabraDetectada[indicePD] = linea[i];
-						++indicePD;
-					}
-				}
-			}
-			//if (DEPURAR == 1)
-			printf("\nNumPalabras: %i\n", iNumElementos);
-
-			// burbujazo
-
-		}
-
-		fclose(fpDicc);
-		//Ordenar 
-		for (int i = 0; i < iNumElementos - 1; ++i)
-		{
-			for (int j = 0; j < iNumElementos - i - 1; ++j)
-			{
-				if (strcmp(szPalabras[j], szPalabras[j + 1]) > 0)
-				{
-					//Intercambiar las palabras
-					char temp[TAMTOKEN];
-					strcpy_s(temp, TAMTOKEN, szPalabras[j]);
-					strcpy_s(szPalabras[j], TAMTOKEN, szPalabras[j + 1]);
-					strcpy_s(szPalabras[j + 1], TAMTOKEN, temp);
-
-				}
-			}
-		}
-	}
-	else
-	{
-		//if (DEPURAR == 1)
-		printf("\nNo lo pude abrir");
-	}
-}
 
 /*****************************************************************************************************************
 	ListaCandidatas: Esta funcion recupera desde el diccionario las palabras validas y su peso
