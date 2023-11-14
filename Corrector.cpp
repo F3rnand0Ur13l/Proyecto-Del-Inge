@@ -12,18 +12,34 @@
 
 #include "stdafx.h"
 #include <string.h>
+#include <ctype.h>
 #include "corrector.h"
 //#define DEPURAR 1
 
 //Funciones publicas del proyecto
 /*****************************************************************************************************************
 	DICCIONARIO: Esta funcion crea el diccionario completo
-	char *	szNombre				:	Nombre del archivo de donde se sacaran las palabras del diccionario	
+	char *	szNombre				:	Nombre del archivo de donde se sacaran las palabras del diccionario
 	char	szPalabras[][TAMTOKEN]	:	Arreglo con las palabras completas del diccionario
 	int		iEstadisticas[]			:	Arreglo con el numero de veces que aparecen las palabras en el diccionario
 	int &	iNumElementos			:	Numero de elementos en el diccionario
 ******************************************************************************************************************/
-void	Diccionario			(char *szNombre, char szPalabras[][TAMTOKEN], int iEstadisticas[], int &iNumElementos)
+void AcentosMinusculas(char* palabra)
+{
+	for (int i = 0; palabra[i] != '\0'; i++)
+	{
+		switch (palabra[i])
+		{
+		case 'á': palabra[i] = 'a'; break;
+		case 'é': palabra[i] = 'e'; break;
+		case 'í': palabra[i] = 'i'; break;
+		case 'ó': palabra[i] = 'o'; break;
+		case 'ú': palabra[i] = 'u'; break;
+		}
+		palabra[i] = tolower(palabra[i]);
+	}
+}
+void	Diccionario(char* szNombre, char szPalabras[][TAMTOKEN], int iEstadisticas[], int& iNumElementos)
 {
 	FILE* fpDicc;
 	char linea[4000];
@@ -50,35 +66,69 @@ void	Diccionario			(char *szNombre, char szPalabras[][TAMTOKEN], int iEstadistic
 				if (linea[i] == ' ' || linea[i] == '\n' || linea[i] == '\t' || linea[i] == '\r')
 				{
 					palabraDetectada[indicePD] = '\0';
-					strcpy_s(szPalabras[iNumElementos], TAMTOKEN, palabraDetectada);
-					iEstadisticas[iNumElementos] = 1;
+					AcentosMinusculas(palabraDetectada);
+					//Palabras repetidas 
+					int indiceExistente = -1;
+					for (int j = 0; j < iNumElementos && indiceExistente == -1; ++j)
+					{
+						if (strcmp(szPalabras[j], palabraDetectada) == 0)
+						{
+							indiceExistente = j;
+						}
+					}
+					if (indiceExistente != -1)
+					{
+						iEstadisticas[indiceExistente]++;
+					}
+					else
+					{
+						strcpy_s(szPalabras[iNumElementos], TAMTOKEN, palabraDetectada);
+						iEstadisticas[iNumElementos] = 1;
+						++iNumElementos;
+					}
+
 					indicePD = 0;
-					iNumElementos++;
 					// eliminar los espacios en blanco
 					// tabuladores y saltos de linea consecutivos				
-			    }
+				}
 				else
 				{
-					if (linea[i] != '(' && linea[i] != ')' && linea[i] != ',' && linea[i] != '.' && linea[i] != ';')
+					if (linea[i] != '(' && linea[i] != ')' && linea[i] != ',' && linea[i] != '.' && linea[i] != ';' && linea[i] != '´')
 					{
 						palabraDetectada[indicePD] = linea[i];
-						indicePD++;
+						++indicePD;
 					}
 				}
 			}
 			//if (DEPURAR == 1)
-				printf("\nNumPalabras: %i\n", iNumElementos);
+			printf("\nNumPalabras: %i\n", iNumElementos);
 
 			// burbujazo
 
 		}
 
 		fclose(fpDicc);
+		//Ordenar 
+		for (int i = 0; i < iNumElementos - 1; ++i)
+		{
+			for (int j = 0; j < iNumElementos - i - 1; ++j)
+			{
+				if (strcmp(szPalabras[j], szPalabras[j + 1]) > 0)
+				{
+					//Intercambiar las palabras
+					char temp[TAMTOKEN];
+					strcpy_s(temp, TAMTOKEN, szPalabras[j]);
+					strcpy_s(szPalabras[j], TAMTOKEN, szPalabras[j + 1]);
+					strcpy_s(szPalabras[j + 1], TAMTOKEN, temp);
+
+				}
+			}
+		}
 	}
 	else
 	{
 		//if (DEPURAR == 1)
-			printf("\nNo lo pude abrir");
+		printf("\nNo lo pude abrir");
 	}
 }
 
